@@ -89,6 +89,9 @@ static void add_leak(struct ld_alloc_db* db, void* ptr, struct ld_alloc_info* in
 
 static struct ld_alloc_info* get_leak(struct ld_alloc_db* db, void* ptr)
 {
+    if (ptr == 0)
+        return 0;
+
     struct ld_alloc_info** ai = (struct ld_alloc_info**)hashmap_get(&db->allocations, hm_cast(ptr));
     return *ai;
 }
@@ -129,8 +132,14 @@ void* ld_realloc(void* ptr, size_t size, const char* file, unsigned int line)
     struct ld_alloc_info* ai = get_leak(&alloc_db, ptr);
     /* Allocation exists */
     if (ai) {
+        /* Behave like free */
+        if (size == 0)
+        {
+            ld_free(ptr);
+            return 0;
+        }
+
         void* newmptr = realloc(ptr, size);
-        assert(newmptr == ptr);
         ai->size = size;
         ai->line = line;
         strcpy(ai->filename, file);

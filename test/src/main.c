@@ -31,6 +31,7 @@
 #define __USE_MINGW_ANSI_STDIO 1
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include "macu.h"
 
 size_t hash_fn(hm_ptr key)
@@ -122,6 +123,29 @@ void leak_detect_test()
     *x = 3;
     free(x);
     x = malloc(7);
+
+    char* str1 = "Hello";
+    char* str2 = " World 666!";
+    size_t str1len = strlen(str1);
+    size_t str2len = strlen(str2);
+
+    /* Use realloc as malloc */
+    char* buffer = 0;
+    buffer = realloc(buffer, str1len + 1);
+
+    strncpy(buffer, str1, str1len);
+    char* temp;
+    temp = realloc(buffer, str1len + str2len + 1);
+    buffer = temp;
+    strncat(buffer, str2, str2len);
+
+    fputs("The next line should be 'Hello World 666!'\n", stdout);
+    fputs(buffer, stdout);
+    fputs("\n", stdout);
+
+    /* Use realloc as free */
+    realloc(buffer, 0);
+
     ld_print_leaks();
     ld_shutdown();
 }
